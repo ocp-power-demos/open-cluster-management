@@ -1,0 +1,68 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-deployment
+  namespace: pacman
+  annotations:
+    policy.open-cluster-management.io/categories: PR.PT Protective Technology
+    policy.open-cluster-management.io/controls: PR.PT-3 Least Functionality
+    policy.open-cluster-management.io/standards: NIST-CSF
+spec:
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-deployment-pacman-deployment
+        spec:
+          namespaceSelector:
+            exclude:
+              - kube-*
+            include:
+              - pacman
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: apps/v1
+                kind: Deployment
+                metadata:
+                  name: pacman
+                spec:
+                  template:
+                    spec:
+                      containers:
+                        - name: pacman
+          remediationAction: inform
+          severity: low
+  remediationAction: inform
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-policy-deployment
+  namespace: pacman
+placementRef:
+  name: placement-policy-deployment
+  apiGroup: apps.open-cluster-management.io
+  kind: PlacementRule
+subjects:
+  - name: policy-deployment
+    apiGroup: policy.open-cluster-management.io
+    kind: Policy
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-policy-deployment
+  namespace: pacman
+spec:
+  clusterConditions:
+    - status: 'True'
+      type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions:
+      - key: pacman-demo
+        operator: In
+        values:
+          - 'true'
